@@ -1,0 +1,36 @@
+1- Summarizing the Dataset
+
+#dim(AADS)
+#names(AADS)
+#nrow(AADS)
+#class(AADS)
+#sapply(AADS[3,],class)
+#length(unique(AADS$Accident.Number))
+#nrow(AADS)
+#table(AADS$Injury.Severity)
+#table(AADS$Country,AADS$Total.Fatal.Injuries)
+
+
+
+# Finding correlation between variables and plots 
+
+Just some quick thoughts. First, you could analyse univariate frequencies of values (absolute counts or percentages). These could be visualized via bar charts. Do not choose piecharts for variables with more than 2 values.
+
+If you are interested in the connection between variables, you could do mosaic plots.
+
+Categorical can mean nominal or ordinal. Nominal data could be analysed through crosstabulations and a statistical test (chi-square dor example). Ordinal data can be analysed through a matrix of spearman correlations.
+
+A more complex analysis could be latent class analysis. Here you would try to find (unobserved) classes of observation-units (~participants), that can be held accountable for patterns of values that can be found in the data.
+
+
+
+Numerical data with bins - Hist,box
+Numirical variables with few values
+
+
+
+# NA and Blank replacment..
+
+#DF$COl[which(is.na(DF$COl))]<-0
+
+#DF$COl[DF$COl==""]<-0

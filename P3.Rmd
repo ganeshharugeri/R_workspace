@@ -1,0 +1,210 @@
+---
+title: "P3 Assignment Notebook"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+Import all data sets given
+
+```{r}
+setwd("/Users/ganeshharugeri/Documents/R_workspace/input/P3")
+print(c("Working Directory:",getwd()))
+
+filename1 <- paste(c(getwd(),"/flights.csv"),collapse="")
+filename2 <- paste(c(getwd(),"/airlines.csv"),collapse="")
+filename3 <- paste(c(getwd(),"/airports.csv"),collapse="")
+
+flights <- read.table(filename1,sep = ",",header = 1)
+airlines <- read.table(filename2,sep = ",",header = 1)
+airports <- read.table(filename3,sep = ",",header = 1)
+
+```
+
+Data loading: Solving the Data loading issue due to sererator difference (, ; mismatch) and then reloading.
+
+```{r}
+#rm(flights)
+#rm(airlines)
+#rm(airports)
+```
+
+
+Understanding the structure of the given datasets
+
+```{r}
+
+str(flights)
+str(airlines)
+str(airports)
+``` 
+
+Data preperation: Deleted incomplete columns, having more than 80% of missing values
+
+```{r}
+flights <- subset(flights, select = -c(27:31) )
+```
+
+
+Data Exploration: See the data at a glance and ther samples
+```{r}
+print(c("Flights Sample data", head(flights)))
+print(c("Airlines Sample data",head(airlines)))
+print(c("Airports Sample data",head(airports)))
+```
+
+
+
+Data Exploration: Summary analysis of the given data sets
+```{r}
+print(c("Flights Summary", summary(flights)))
+print(c("Airlines Summary",summary(airlines)))
+print(c("Airports Summary",summary(airports)))
+```
+
+
+Data Transformation: Enabling data type conversions to increase effciency of the data readability. 
+
+```{r}
+print (c("YEAR:", levels (factor (flights$YEAR))))
+print (c("MONTH:", levels (factor (flights$MONTH))))
+print (c("DAY:", levels (factor (flights$DAY))))
+print (c("DAY_OF_WEEK:", levels (factor (flights$DAY_OF_WEEK))))
+
+print (c("DIVERTED:", levels (factor (flights$DIVERTED))))
+print (c("CANCELLED:", levels (factor (flights$CANCELLED))))
+
+# Data converted as they had only two levels 
+flights$DIVERTED <- as.factor(flights$DIVERTED)
+flights$CANCELLED <- as.factor(flights$CANCELLED)
+flights$DAY_OF_WEEK <- as.factor(flights$DAY_OF_WEEK)
+flights$MONTH <- as.factor(flights$MONTH)
+flights$YEAR <- as.factor(flights$YEAR)
+
+typeof(flights$CANCELLED)
+```
+
+
+Data Representation & flights distribution per month plot
+
+```{r}
+table(flights$MONTH)
+library(ggplot2)
+ggplot(flights, aes(x=MONTH, fill=MONTH))+geom_bar()
+#ggplot(flights, aes(x=Day, fill=DayofMonth))+geom_bar()
+
+#Another method
+#x<-table(flights$MONTH)
+#barplot(x)
+```
+
+
+I tried to remove the rows with incomplete details as the scope of this work is not buid a perfect predicting model.
+
+```{r}
+flights<-flights[complete.cases(flights), ]
+na.omit(flights)
+```
+
+
+
+Data Exploration: Market shares by Air carriers
+
+```{r}
+flights <- subset(flights, !(is.na(flights$AIR_TIME)))
+na_percentages <- sapply(flights, function(x) sum(is.na(x))) / nrow(flights) * 100
+sort(format(round(na_percentages, 4), nsmall = 4))
+```
+
+
+Data Exploration: Delay analysis per airline carrier
+
+```{r}
+airline.avg.delay <- aggregate(flights$ARRIVAL_DELAY, by=list(flights$AIRLINE), mean, na.rm=T)
+names(airline.avg.delay) <- c("AirlineCode", "Mean.Arrival.Delay")
+airline.avg.delay <- merge(airline.avg.delay, airlines, by.x="AirlineCode", by.y="IATA_CODE", all.x=TRUE)
+
+airline.avg.delay <- airline.avg.delay[order(airline.avg.delay$Mean.Arrival.Delay), ]
+airline.avg.delay <- airline.avg.delay[ ,c(3,1,2)]
+
+airline.avg.delay
+
+
+barplot(airline.avg.delay$Mean.Arrival.Delay,
+        names.arg=airline.avg.delay$AirlineCode,
+        col="grey",
+        main="Mean Arrival Delay by Airline", 
+        xlab="Airline Code",
+        ylab="Mean Arrival Delay")
+```
+
+
+
+
+Data Splitting: data is divided to training and testing datasets:
+
+```{r}
+
+#library(caret)
+#ind <- sample(2, nrow(flights), replace = TRUE, prob=c(0.7, 0.3))
+
+#Too high memory required for the random arrangements
+#trainset = flights[ind == 1,]
+#testset = flights[ind == 2,]
+
+rm(flights_train)
+rm(testData)
+set.seed(120)
+trainset = flights[1:4073355,]
+testset = flights[4073355:5819079,]
+
+```
+
+
+Create categorical columns for the trainset.
+
+```{r}
+#na.omit(trainset)
+#na.omit(flights)
+
+trainset$delayed = trainset$ARRIVAL_DELAY > 0
+trainset$on_time = trainset$ARRIVAL_DELAY == 0
+trainset$ahead_of_time = trainset$ARRIVAL_DELAY < 0
+
+#flights_train <- colMeans(flights[,-23])
+#flights_train = subset(flights, select = -c(23))
+#str(flights_train)
+#testData = flights_train[1:400,]
+
+```
+
+
+Installation and initiation Neural net package
+Neural net for the newly created categorical attribues
+```{r}
+# Too big
+library(neuralnet)
+nn_result = neuralnet(delayed + on_time + ahead_of_time ~ SCHEDULED_DEPARTURE + DEPARTURE_DELAY + TAXI_OUT + TAXI_IN + SCHEDULED_ARRIVAL + ARRIVAL_TIME, trainset, hidden=1)
+
+#nn_result
+
+```
+
+ 
+
+Result matrix - Use it to predict flight delay
+
+#Predict future
+```{r}
+nn_result$result.matrix
+#nn_pred <- compute(nn_result, testset)
+#Run them through the neural network
+
+```
+
+Plot the Neural network
+```{r}
+plot(nn_result)
+```
+
